@@ -1,16 +1,22 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections;
+using UnityEngine.Events; // Useful for triggering death effects
 
 public class PlayerScript : MonoBehaviour
 {
     [SerializeField] private float moveSpeed = 5f;
     
+
+    private float currentSpeed;
+
     private Rigidbody2D rb;
     private Vector2 moveInput;
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        currentSpeed = moveSpeed;
     }
 
     // This method is called automatically by the Player Input component
@@ -18,6 +24,21 @@ public class PlayerScript : MonoBehaviour
     void OnMove(InputValue value)
     {
         moveInput = value.Get<Vector2>();
+    }
+
+    // This is the function the Health script will call
+    public void ApplySlow(float multiplier, float duration)
+    {
+        Debug.Log(gameObject.name + " is slowed! Multiplier: " + multiplier);
+        StopAllCoroutines(); // Reset if hit again quickly
+        StartCoroutine(SlowRoutine(multiplier, duration));
+    }
+
+    IEnumerator SlowRoutine(float multiplier, float duration)
+    {
+        currentSpeed = moveSpeed * multiplier; // e.g., 5 * 0.5 = 2.5
+        yield return new WaitForSeconds(duration);
+        currentSpeed = moveSpeed;
     }
 
 
@@ -36,6 +57,6 @@ public class PlayerScript : MonoBehaviour
     void FixedUpdate()
     {
         // Apply velocity to the Rigidbody
-        rb.linearVelocity = moveInput * moveSpeed;
+        rb.linearVelocity = moveInput * currentSpeed;
     }
 }

@@ -1,11 +1,16 @@
 using UnityEngine;
+using System.Collections;
+using UnityEngine.Events; // Useful for triggering death effects
 
 public class ZedScript : MonoBehaviour
 {
     [Header("Movement")]
     [SerializeField] private float damageAmount = 10f;
     [SerializeField] private float attackCooldown = 1.0f;
+    [SerializeField] private float moveSpeed = 2f;
 
+
+    private float currentSpeed;
     private UnityEngine.AI.NavMeshAgent agent;
     private Transform player;
     private float nextAttackTime;
@@ -55,5 +60,19 @@ public class ZedScript : MonoBehaviour
             playerHealth.TakeDamage(damageAmount);
         }
         
+    }
+
+    public void ApplySlow(float multiplier, float duration)
+    {
+        Debug.Log(gameObject.name + " is slowed! Multiplier: " + multiplier);
+        StopAllCoroutines();
+        StartCoroutine(SlowRoutine(multiplier, duration));
+    }
+
+    IEnumerator SlowRoutine(float multiplier, float duration)
+    {
+        agent.speed = moveSpeed * multiplier;
+        yield return new WaitForSeconds(duration);
+        agent.speed = moveSpeed;
     }
 }
