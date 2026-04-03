@@ -1,10 +1,20 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections;
+using System; // For Action delegate
+// Debug = UnityEngine.Debug to avoid confusion with System.Diagnostics.Debug
 
-public partial class HandScript : MonoBehaviour
+
+
+public class WeaponScript : MonoBehaviour
 {
+    public static event Action OnAmmoChanged;
+
+
+
     [SerializeField] private float orbitDistance = 1.2f;
     [SerializeField] private Transform playerTransform;
+
 
 
     [Header("References")]
@@ -15,41 +25,89 @@ public partial class HandScript : MonoBehaviour
     [SerializeField] private float bulletSpeed = 20f;
     [SerializeField] private float fireRate = 0.2f; // Time between shots
     [SerializeField] private float maxRange = 10f;
-    [SerializeField] [Range(0, 20)] private float accuracyWeight = 5f; // Higher = more spread
+    [SerializeField][Range(0, 20)] private float accuracyWeight = 5f; // Higher = more spread
+
+    [Header("Magazine Settings")]
+    [SerializeField] private int magSize = 12;
+    [SerializeField] private float reloadTime = 1.5f;
 
     private float nextFireTime;
+    private bool isReloading = false;
+    private int currentAmmo = 12; // Start with a full mag
+
+
 
 
     private Camera mainCamera;
 
-    // This matches the "Attack" action in Input System
-    void OnAttack(InputValue value)
+    public int getAmmo()
     {
-        if (Time.time >= nextFireTime)
+        return currentAmmo;
+    }
+
+    public bool isCurrentlyReloading()
+    {
+        return isReloading;
+    }
+
+    public float getReloadTime()
+    {
+        return reloadTime;
+    }
+
+    public void Reload()
+    {
+        if (!isReloading && currentAmmo < magSize)
         {
-            Shoot();
-            nextFireTime = Time.time + fireRate;
+            StartCoroutine(ReloadRoutine());
         }
     }
 
-    void Shoot()
+
+    public void Shoot()
     {
+        if (currentAmmo <= 0 || isReloading || Time.time < nextFireTime)
+            return;
+
+        nextFireTime = Time.time + fireRate;
+        currentAmmo--;
+        OnAmmoChanged?.Invoke(); // Notify UI of ammo change
+
         // 1. Calculate Spread (Accuracy)
-        float spread = Random.Range(-accuracyWeight, accuracyWeight);
+        float spread = UnityEngine.Random.Range(-accuracyWeight, accuracyWeight);
         Quaternion bulletRotation = transform.rotation * Quaternion.Euler(0, 0, spread);
 
         // 2. Spawn Bullet
         GameObject bulletObj = Instantiate(bulletPrefab, firePoint.position, bulletRotation);
-        
+
         // 3. Initialize Bullet
         Bullet bulletScript = bulletObj.GetComponent<Bullet>();
         bulletScript.Setup(bulletSpeed, maxRange);
     }
 
+    IEnumerator ReloadRoutine()
+    {
+        
+        isReloading = true;
+        Debug.Log("Reloading...");
+        OnAmmoChanged?.Invoke(); // Notify UI of ammo change
+
+        // Optional: Change hand color or play animation here
+        GetComponent<SpriteRenderer>().color = new Color(1f, 1f, 1f, 0.5f);
+
+        yield return new WaitForSeconds(reloadTime);
+
+        currentAmmo = magSize;
+        isReloading = false;
+        GetComponent<SpriteRenderer>().color = Color.white;
+        OnAmmoChanged?.Invoke(); // Notify UI of ammo change
+        Debug.Log("Reload Complete!");
+    }
+
     void Start()
     {
         mainCamera = Camera.main;
-        
+
         // If you didn't assign the player in the inspector, find the parent
         if (playerTransform == null)
             playerTransform = transform.parent;

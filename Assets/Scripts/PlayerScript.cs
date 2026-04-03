@@ -1,20 +1,28 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
-using UnityEngine.Events; // Useful for triggering death effects
+using UnityEngine.Events;
 
 public class PlayerScript : MonoBehaviour
 {
     [SerializeField] private float moveSpeed = 5f;
-    
+
 
     private float currentSpeed;
 
     private Rigidbody2D rb;
     private Vector2 moveInput;
 
+    private Camera mainCamera;
+
+    private WeaponScript weapon; // Drag your Hand/Gun here
+
     void Start()
     {
+        weapon = GetComponentInChildren<WeaponScript>(); // Automatically find the weapon script in children
+
+        mainCamera = Camera.main;
+
         rb = GetComponent<Rigidbody2D>();
         currentSpeed = moveSpeed;
     }
@@ -24,6 +32,24 @@ public class PlayerScript : MonoBehaviour
     void OnMove(InputValue value)
     {
         moveInput = value.Get<Vector2>();
+    }
+
+    void OnAttack(InputValue value)
+    {
+        
+        if (weapon != null)
+        {
+            weapon.Shoot();
+        }
+    }
+
+    void OnReload(InputValue value)
+    {
+        Debug.Log("Reload button pressed");
+        if (weapon != null)
+        {
+            weapon.Reload();
+        }
     }
 
     // This is the function the Health script will call
@@ -44,13 +70,22 @@ public class PlayerScript : MonoBehaviour
 
     void Update()
     {
-        // Optional: Rotate player to face movement direction
-        if (moveInput.sqrMagnitude > 0.1f)
+        // Optional 1: Rotate player to face movement direction
+        // if (moveInput.sqrMagnitude > 0.1f)
+        // {
+        //     float angle = Mathf.Atan2(moveInput.y, moveInput.x) * Mathf.Rad2Deg;
+        //     transform.rotation = Quaternion.Euler(0, 0, angle);
+        // }
+
+        // Optional 2: Rotate player to mouse direction
+        if (Mouse.current != null)
         {
-            float angle = Mathf.Atan2(moveInput.y, moveInput.x) * Mathf.Rad2Deg;
+            Vector2 mouseScreenPos = Mouse.current.position.ReadValue();
+            Vector3 mouseWorldPos = mainCamera.ScreenToWorldPoint(new Vector3(mouseScreenPos.x, mouseScreenPos.y, mainCamera.nearClipPlane));
+            Vector2 direction = (mouseWorldPos - transform.position).normalized;
+            float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
             transform.rotation = Quaternion.Euler(0, 0, angle);
         }
-
 
     }
 
