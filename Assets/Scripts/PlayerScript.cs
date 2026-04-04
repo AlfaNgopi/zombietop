@@ -36,7 +36,7 @@ public class PlayerScript : MonoBehaviour
 
     void OnAttack(InputValue value)
     {
-        
+
         if (weapon != null)
         {
             weapon.Shoot();
@@ -82,9 +82,12 @@ public class PlayerScript : MonoBehaviour
         {
             Vector2 mouseScreenPos = Mouse.current.position.ReadValue();
             Vector3 mouseWorldPos = mainCamera.ScreenToWorldPoint(new Vector3(mouseScreenPos.x, mouseScreenPos.y, mainCamera.nearClipPlane));
+
             Vector2 direction = (mouseWorldPos - transform.position).normalized;
             float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-            transform.rotation = Quaternion.Euler(0, 0, angle);
+            
+            // Subtract 90 to align the sprite's "Up" with the "Forward" direction
+            transform.rotation = Quaternion.Euler(0, 0, angle - 90);
         }
 
     }
